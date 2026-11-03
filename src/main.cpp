@@ -362,10 +362,13 @@ class $modify(GSTPlayLayer, PlayLayer) {
     }
 };
 
-// Multiply the game-layer delta time only while PlayLayer is active.
+// Multiply delta time only for the active PlayLayer. The explicit upcast
+// avoids comparing PlayLayer* with GJBaseGameLayer* (a compile-time error).
 class $modify(GSTBaseGameLayer, GJBaseGameLayer) {
     void update(float dt) {
-        if (PlayLayer::get() == this && gst::speedEnabled) {
+        auto* playLayer = PlayLayer::get();
+        auto* activeGameLayer = static_cast<GJBaseGameLayer*>(playLayer);
+        if (playLayer && activeGameLayer == this && gst::speedEnabled) {
             GJBaseGameLayer::update(dt * gst::speeds[gst::speedIndex]);
             return;
         }
