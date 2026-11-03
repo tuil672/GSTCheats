@@ -1,0 +1,14 @@
+{
+  "geode": "v6.0.0-alpha.1",
+  "gd": {
+    "win": "2.2091",
+    "mac": "2.2091",
+    "ios": "2.2091",
+    "android": "2.2091"
+  },
+  "id": "gstgeode.gstgeode",
+  "name": "GSTgeode",
+  "version": "v1.0.0",
+  "developer": "GSTgeode",
+  "description": "A compact creator and practice toolkit for Geometry Dash: themed layout builder, noclip and speed control."
+}
