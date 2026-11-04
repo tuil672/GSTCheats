@@ -72,8 +72,8 @@ namespace gst {
     }
 
     bool isFlyingMode(int mode) {
-        // SHIP, UFO, WAVE
-        return mode == 2 || mode == 4 || mode == 5;
+        // SHIP, UFO, WAVE, SWING
+        return mode == 2 || mode == 4 || mode == 5 || mode == 8;
     }
 
     void loadSettings() {
@@ -146,16 +146,18 @@ namespace gst {
         auto* ui = editor->m_editorUI;
         const Theme& theme = themes[clampIndex(themeIndex, themeCount)];
 
-        const int segmentsByLength[] = { 32, 48, 72 };
-        const int spikeEveryByDifficulty[] = { 8, 6, 5, 4 };
-        const int blockEveryByDifficulty[] = { 12, 10, 8, 6 };
+        // Cell counts are deliberately much larger than v1.x: 30 units per cell
+        // means the old 32/48/72 values were only 3-7 seconds of gameplay.
+        const int segmentsByLength[] = { 160, 280, 420 };
+        const int spikeEveryByDifficulty[] = { 9, 7, 5, 4 };
+        const int blockEveryByDifficulty[] = { 14, 11, 8, 6 };
 
         const int segments = segmentsByLength[clampIndex(lengthIndex, 3)];
         const int difficulty = clampIndex(difficultyIndex, 4);
         const int spikeEvery = spikeEveryByDifficulty[difficulty];
         const int blockEvery = blockEveryByDifficulty[difficulty];
 
-        const int sectionCount = segments >= 40 ? 8 : 4;
+        const int sectionCount = segments >= 300 ? 8 : (segments >= 200 ? 7 : 6);
         const int sectionLen = segments / sectionCount;
         const int mixOrder[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
         const int selectedMode = clampIndex(modeIndex, 9);
@@ -180,48 +182,74 @@ namespace gst {
         };
 
         // -- Gameplay ------------------------------------------------------
+        // A portal stack of three copies covers the full vertical range
+        // (60..330), so a mode switch is guaranteed no matter how high the
+        // player is when leaving a flying section.
+        auto addPortalStack = [&](int mode, float x) {
+            if (mode <= 0) return;
+            for (int level = 0; level < 3; ++level) {
+                add(modePortalIDs[mode], { x, groundY + static_cast<float>(level) * grid * 3.f },
+                    theme.accent);
+            }
+        };
+
         for (int section = 0; section < sectionCount; ++section) {
             const int mode = (selectedMode == 0) ? mixOrder[section % 8] : selectedMode;
             const float sectionX = startX + static_cast<float>(section) * sectionLen * grid;
             const bool flying = isFlyingMode(mode);
 
-            // Mode portal at the start of the section. Two stacked copies make
-            // sure the player hits it whether they are on the ground or in the
-            // air after a flying section.
-            if (section > 0 || mode != 1) {
-                add(modePortalIDs[mode], { sectionX, groundY }, theme.accent);
-                add(modePortalIDs[mode], { sectionX, groundY + 90.f }, theme.accent);
-            }
+            if (section > 0) addPortalStack(mode, sectionX);
+
+            // Keep the cells around portals clear so the transition is safe.
+            const int firstCell = section > 0 ? 3 : 4;
+            const int lastCell = sectionLen - 2;
 
             if (flying) {
-                const float ceilingY = (mode == 5) ? 195.f : 255.f;
+                if (mode == 5) { // WAVE
+                    for (int i = firstCell; i < lastCell; ++i) {
+                        const float x = sectionX + static_cast<float>(i) * grid;
+                        add(1, { x, 255.f }, theme.detail, 1.f, 0.f, 230);
 
-                for (int i = 2; i < sectionLen; ++i) {
-                    const float x = sectionX + static_cast<float>(i) * grid;
-
-                    if (mode == 2) { // SHIP
-                        add(1, { x, ceilingY }, theme.detail, 1.f, 0.f, 220);
-                        if ((i + variantIndex) % 4 == 0) add(1, { x, 195.f }, theme.accent);
-                        if ((i + variantIndex) % 4 == 2) add(1, { x, groundY }, theme.primary);
-                    } else if (mode == 4) { // UFO
-                        if (i % 2 == 0) add(1, { x, ceilingY }, theme.detail, 1.f, 0.f, 220);
-                        if ((i + variantIndex) % 3 == 0) add(1, { x, 165.f }, theme.accent);
-                        if ((i + variantIndex) % 6 == 0) add(8, { x, groundY }, theme.accent);
-                    } else { // WAVE
-                        if (i % 2 == 0) add(1, { x, 195.f }, theme.detail);
-                        else add(1, { x, groundY }, theme.primary);
+                        const int pillarEvery = (difficulty >= 3) ? 7 : 9;
+                        if ((i + variantIndex) % pillarEvery == 0) {
+                            add(1, { x, groundY }, theme.primary);
+                            add(1, { x, groundY + grid }, theme.primary);
+                            add(1, { x, groundY + grid * 2.f }, theme.primary);
+                        }
+                    }
+                } else if (mode == 8) { // SWING
+                    for (int i = firstCell; i < lastCell; ++i) {
+                        const float x = sectionX + static_cast<float>(i) * grid;
+                        add(1, { x, 285.f }, theme.detail, 1.f, 0.f, 230);
+                        if ((i + variantIndex) % 6 == 0) add(1, { x, 165.f }, theme.accent);
+                        if ((i + variantIndex) % 6 == 3) add(1, { x, 225.f }, theme.accent);
+                    }
+                } else if (mode == 2) { // SHIP
+                    for (int i = firstCell; i < lastCell; ++i) {
+                        const float x = sectionX + static_cast<float>(i) * grid;
+                        add(1, { x, 255.f }, theme.detail, 1.f, 0.f, 230);
+                        if ((i + variantIndex) % 5 == 0) add(1, { x, groundY }, theme.primary);
+                        if ((i + variantIndex) % 5 == 3) add(1, { x, 195.f }, theme.accent);
+                    }
+                } else { // UFO
+                    for (int i = firstCell; i < lastCell; ++i) {
+                        const float x = sectionX + static_cast<float>(i) * grid;
+                        if (i % 2 == 0) add(1, { x, 255.f }, theme.detail, 1.f, 0.f, 230);
+                        if ((i + variantIndex) % 4 == 0) add(1, { x, 165.f }, theme.accent);
+                        if ((i + variantIndex) % 8 == 0) add(8, { x, groundY }, theme.accent);
                     }
                 }
             } else if (mode == 3) { // BALL
-                for (int i = 2; i < sectionLen; ++i) {
+                for (int i = firstCell; i < lastCell; ++i) {
                     const float x = sectionX + static_cast<float>(i) * grid;
 
-                    if ((i + variantIndex) % 4 == 0) add(1, { x, groundY }, theme.primary);
-                    if ((i + variantIndex) % 4 == 2) add(1, { x, 225.f }, theme.detail);
-                    if ((i + variantIndex) % 7 == 0) add(8, { x, groundY }, theme.accent);
+                    if ((i + variantIndex) % 5 == 0) add(1, { x, groundY }, theme.primary);
+                    if ((i + variantIndex) % 5 == 2) add(1, { x, 225.f }, theme.detail);
+                    if ((i + variantIndex) % 9 == 0) add(8, { x, groundY }, theme.accent);
+                    if (styleIndex == 1 && i % 7 == 3) add(1, { x, 255.f }, theme.detail, 1.f, 0.f, 220);
                 }
-            } else { // CUBE, ROBOT, SPIDER, SWING
-                for (int i = 2; i < sectionLen; ++i) {
+            } else { // CUBE, ROBOT, SPIDER
+                for (int i = firstCell; i < lastCell; ++i) {
                     const float x = sectionX + static_cast<float>(i) * grid;
                     const int phase = (variantIndex + section) % 5;
 
@@ -231,14 +259,16 @@ namespace gst {
                             add(8, { x + grid, groundY }, theme.accent);
                         }
                     } else if ((i + phase) % blockEvery == 0) {
+                        // Never stack more than two blocks: a three-block wall
+                        // is not jumpable by the cube.
                         add(1, { x, groundY }, theme.primary);
                         if (difficulty >= 2) add(1, { x, groundY + grid }, theme.primary);
-                        if (difficulty >= 3 && styleIndex == 1) {
-                            add(1, { x, groundY + grid * 2.f }, theme.primary);
-                        }
                     }
 
-                    if (styleIndex == 2 && i % 3 == 0) {
+                    if (styleIndex == 1 && i % 7 == 3) {
+                        add(1, { x, 255.f }, theme.detail, 1.f, 0.f, 220);
+                    }
+                    if (styleIndex == 2 && i % 4 == 0) {
                         add(1, { x, 225.f }, theme.detail, 1.f, 0.f, 220);
                     }
                 }
@@ -365,14 +395,16 @@ protected:
 
         auto* titleLabel = CCLabelBMFont::create(title, "bigFont.fnt");
         titleLabel->setAnchorPoint({ 0.f, 0.5f });
-        titleLabel->setPosition({ -width * 0.5f + 12.f, 0.f });
+        // Children of a CCMenuItem use the item's bottom-left corner as origin,
+        // so the labels must live inside 0..width.
+        titleLabel->setPosition({ 12.f, 14.f });
         titleLabel->setScale(0.34f);
         titleLabel->setColor(kTitle);
         item->addChild(titleLabel);
 
         auto* valueLabel = CCLabelBMFont::create(value, "bigFont.fnt");
         valueLabel->setAnchorPoint({ 1.f, 0.5f });
-        valueLabel->setPosition({ width * 0.5f - 12.f, 0.f });
+        valueLabel->setPosition({ width - 12.f, 14.f });
         valueLabel->setScale(0.34f);
         valueLabel->setColor(kValue);
         item->addChild(valueLabel);

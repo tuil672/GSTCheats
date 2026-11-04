@@ -28,7 +28,7 @@ The panel has three tabs and opens from the main menu, the editor, or the pause 
 | Mode | `MIX`, `CUBE`, `SHIP`, `BALL`, `UFO`, `WAVE`, `ROBOT`, `SPIDER`, `SWING` |
 | Theme | `NEON`, `SUNSET`, `FOREST`, `GOLD`, `ICE` |
 | Difficulty | `EASY`, `NORMAL`, `HARD`, `DEMON` |
-| Length | `SHORT` (32 cells), `MEDIUM` (48), `LONG` (72) |
+| Length | `SHORT` (160 cells), `MEDIUM` (280), `LONG` (420) |
 | Decor | `OFF`, `LIGHT`, `FULL` |
 | Style | `FLOW`, `TOWERS`, `CORRIDOR` |
 | Variant | `V1`–`V4` (changes the obstacle phase) |
@@ -54,7 +54,11 @@ mode keeps the whole generated section in that mode.
   blocks (`1`), spikes (`8`) and mode portals.
 - Obstacles sit on the real ground (`y = 105`), so the layout is playable immediately
   instead of starting with an unjumpable wall.
-- Flying sections get a ceiling; wave sections get a tighter corridor.
+- Flying sections get a ceiling; wave sections get pillars to weave through, and
+  swing sections use their own gravity-flip layout.
+- Mode portals are stacked in three rows (60..330) so a mode change is triggered at
+  any height, and cells around each portal are left empty.
+- Walls are capped at two blocks so every cube/robot/spider section is jumpable.
 - Decoration (floating diamonds, arch structures, light beams, distant stars) is placed
   at `y >= 315`, above the player's jump height, so it cannot block the level.
 - Settings are persisted between sessions with `Mod::get()->setSavedValue`.

@@ -1,5 +1,20 @@
 # Changelog
 
+## v2.1.0
+- Fixed the panel layout bug: every control now lives in the popup's centered main
+  layer instead of being drawn from the bottom-left corner of the screen.
+- Fixed row labels being positioned outside their buttons (titles and values were
+  drawn off the row).
+- Difficulty and length now produce real level lengths (160 / 280 / 420 cells
+  instead of 32 / 48 / 72, which were only a few seconds long).
+- Mode portals are stacked in three rows so a mode switch is triggered at any
+  height after a flying section.
+- Added safe zones around portals.
+- Wave sections now have a proper corridor with pillars, and Swing is treated as
+  a flying mode with its own layout.
+- Cube/Robot/Spider walls are capped at two blocks so they are always jumpable.
+- More sections in Mix mode (6-8 depending on length).
+
 ## v2.0.0
 - Rebuilt the panel as a clean three-tab interface (Player / Builder / Visual).
 - Added game-mode selection: Mix, Cube, Ship, Ball, UFO, Wave, Robot, Spider, Swing.
