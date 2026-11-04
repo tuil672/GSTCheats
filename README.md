@@ -1,57 +1,80 @@
-# GSTgeode — source project
+# GSTgeode
 
 **Target:** Geometry Dash `2.2091` / Geode `v6.0.0-alpha.1`  
 **Mod ID:** `gstgeode.gstgeode`
 
-GSTgeode is a new Geode mod project. It does not reuse the old `thesillydoggo.qolmod` binary.
+GSTgeode is a creator/practice toolkit for Geometry Dash. It does not reuse the old
+`thesillydoggo.qolmod` binary.
 
-## Included in v1.0.0
+## Panel
 
-- Custom dark/cyan creator panel with a player-tools and level-builder layout.
-- Noclip-style death bypass toggle.
-- Speedhack toggle with `1.0x`, `1.25x`, `1.5x`, `2.0x`, and `3.0x` rates.
-- Layout generator with five palettes (Neon, Sunset, Forest, Gold, Ice), four obstacle densities (Easy, Normal, Hard, Demon), three lengths (Short, Medium, Long), and three decoration levels (Off, Light, Full).
-- All settings are saved between sessions through `Mod::get()->setSavedValue`.
-- Shortcuts in the main menu, editor UI, and pause menu.
+The panel has three tabs and opens from the main menu, the editor, or the pause menu.
 
-## Generator behavior
+### PLAYER
 
-The generator places standard block objects (`1`) and spike objects (`8`) through `EditorUI::createObject`. The selected theme colors the generated pieces.
+| Feature | Description |
+| --- | --- |
+| Noclip | Suppresses the player-destruction call (death bypass). |
+| Speedhack | Multiplies gameplay delta time. |
+| Speed rate | `1.0x`, `1.25x`, `1.5x`, `2.0x`, `3.0x`. |
+| Auto restart | Restarts the level shortly after a death (disabled in practice mode). |
+| Force practice | Automatically enables practice mode when a level starts. |
+| Reset all | Restores every setting to its default value. |
 
-- **Difficulty** changes spike/block frequency and adds double spikes or taller walls on Hard/Demon.
-- **Length** changes the number of segments.
-- **Decor** adds floating diamonds and block arches. All decoration sits at `y >= 255`, above the player's maximum jump height, so it cannot block the level.
+### BUILDER
 
-Obstacles are placed on the real ground (object centre `y = 105`), so generated levels are immediately playable instead of starting with an unjumpable wall. It is deliberately a **starter layout**, not a fully decorated rated-level generator. Generate into a blank level and use the editor's Undo command to remove the generated pieces.
+| Feature | Options |
+| --- | --- |
+| Mode | `MIX`, `CUBE`, `SHIP`, `BALL`, `UFO`, `WAVE`, `ROBOT`, `SPIDER`, `SWING` |
+| Theme | `NEON`, `SUNSET`, `FOREST`, `GOLD`, `ICE` |
+| Difficulty | `EASY`, `NORMAL`, `HARD`, `DEMON` |
+| Length | `SHORT` (32 cells), `MEDIUM` (48), `LONG` (72) |
+| Decor | `OFF`, `LIGHT`, `FULL` |
+| Style | `FLOW`, `TOWERS`, `CORRIDOR` |
+| Variant | `V1`–`V4` (changes the obstacle phase) |
+| Generate | Builds the layout in the open editor level. |
+| Randomize | Randomizes theme, style, variant and difficulty. |
 
-## Cheat behavior and limitations
+`MIX` splits the level into 4–8 sections and cycles through game modes, inserting the
+matching portals (cube, ship, ball, UFO, wave, robot, spider, swing). Selecting a single
+mode keeps the whole generated section in that mode.
 
-- **Noclip:** suppresses the player-destruction call. It is a death bypass, not a full ghost mode that removes every solid-object collision.
-- **Speedhack:** changes the delta-time passed to the active game layer. High speed values can make physics and timing less predictable.
-- Cheats can invalidate legitimate runs and achievements. Turn them off for normal play or record attempts.
+### VISUAL
+
+| Feature | Description |
+| --- | --- |
+| Hitboxes | Draws live player hitbox rectangles during a run. |
+| HUD | Shows a compact status line in the top-left corner. |
+| Show FPS | FPS counter inside the HUD. |
+| Show percent | Current level percentage inside the HUD. |
+
+## Generator details
+
+- Objects are placed with `EditorUI::createObject` using standard object IDs:
+  blocks (`1`), spikes (`8`) and mode portals.
+- Obstacles sit on the real ground (`y = 105`), so the layout is playable immediately
+  instead of starting with an unjumpable wall.
+- Flying sections get a ceiling; wave sections get a tighter corridor.
+- Decoration (floating diamonds, arch structures, light beams, distant stars) is placed
+  at `y >= 315`, above the player's jump height, so it cannot block the level.
+- Settings are persisted between sessions with `Mod::get()->setSavedValue`.
+
+Generated content is a starter layout, not a fully decorated rated level. Generate into
+an empty level and remove unwanted pieces with the editor.
+
+## Cheat limitations
+
+- Noclip is a death bypass, not a full ghost mode that removes every solid collision.
+- Speedhack changes delta time; high values make physics and timing less predictable.
+- Cheats can invalidate legitimate runs and achievements.
 
 ## Build
 
 The project builds against the Geode `v6.0.0-alpha.1` SDK and bindings for GD `2.2091`.
 
-### GitHub Actions
-
-1. Push to `main` or run **Actions → Build GSTgeode → Run workflow**.
-2. Download the artifact matching your platform (`Android64`, `Android32`, or `Win64`).
-3. Install the resulting `.geode` file using Geode's mod installer / mods folder.
-
-The workflow pins the requested SDK version. If that exact SDK tag is not available from the build action, update the `sdk:` input to the exact Geode 6 SDK ref used by your loader.
-
-### Local build
-
-With the matching Geode SDK and CLI installed:
-
 ```bash
 geode build
 ```
 
-A local Windows build with MSVC 19.44 was verified to produce `build/gstgeode.gstgeode.geode`.
-
-## Compatibility note
-
-Geode `v6.0.0-alpha.1` announces support for the 2.209x line, but it is an alpha release. Test in an empty level before relying on generated layouts, and keep a backup of your save data.
+A local Windows build with MSVC 19.44 was verified to produce
+`build/gstgeode.gstgeode.geode`. The GitHub Actions workflow builds the Win64 artifact.
