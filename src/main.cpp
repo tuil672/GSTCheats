@@ -187,8 +187,10 @@ namespace gst {
         // player is when leaving a flying section.
         auto addPortalStack = [&](int mode, float x) {
             if (mode <= 0) return;
-            for (int level = 0; level < 3; ++level) {
-                add(modePortalIDs[mode], { x, groundY + static_cast<float>(level) * grid * 3.f },
+            // 75-unit spacing keeps the stack continuous even if the portal
+            // sprite is 60 units tall, with overlap if it is 90.
+            for (int level = 0; level < 4; ++level) {
+                add(modePortalIDs[mode], { x, groundY + static_cast<float>(level) * 75.f },
                     theme.accent);
             }
         };
@@ -198,7 +200,7 @@ namespace gst {
             const float sectionX = startX + static_cast<float>(section) * sectionLen * grid;
             const bool flying = isFlyingMode(mode);
 
-            if (section > 0) addPortalStack(mode, sectionX);
+            if (section > 0 || mode != 1) addPortalStack(mode, sectionX);
 
             // Keep the cells around portals clear so the transition is safe.
             const int firstCell = section > 0 ? 3 : 4;
